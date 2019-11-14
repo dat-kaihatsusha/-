@@ -1,0 +1,161 @@
+<?php
+require 'connectdb.php';
+$err = [];
+$msg = [];
+
+//======== lấy ds khoa
+$listKhoa =[];
+$sqlKhoa = "SELECT * FROM khoa ORDER BY tenkh ASC";
+$resKH = mysqli_query($conn, $sqlKhoa);
+if(mysqli_errno($conn))
+	$err[] = 'Lỗi lấy ds khoa: '. mysqli_error($conn);
+else{
+	while ($row = mysqli_fetch_assoc($resKH)) {
+		 $listKhoa[] = $row;
+	}
+}
+mysqli_free_result($resKH);
+
+
+$phai = 0;
+//--------- xử lý ghi CSDL
+
+
+if(isset($_POST['masv'])){
+	//1. đưa dữ liệu vào biến
+	$masv = $_POST['masv'];
+	$hosv = $_POST['hosv'];
+	$tensv = $_POST['tensv'];
+	$phai = intval($_POST['phai']);
+	$makh = $_POST['makh']; 
+	//2. Kiểm tra hợp lệ dữ liệu
+	// masv: điều kiện hợp lệ: 3-5 ký tự, chỉ có số và chữ cái viết hoa.
+	$bt_masv = '/^[A-Z0-9]{3,5}$/';
+	if(!preg_match($bt_masv, $masv)){
+		$err[] = 'Mã sinh viên không hợp lệ';
+	}
+
+	// làm tương tự với họ tên và các cột khác.
+	// if(strlen($hosv)==0)
+	// 	$err[] ='Bạn cần nhập họ đệm';
+$bt_hodem = '/^[ A-Za-zàáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđÀÁẠẢÃÂẦẤẬẨẪĂẰẮẶẲẴÈÉẸẺẼÊỀẾỆỂỄÌÍỊỈĨÒÓỌỎÕÔỒỐỘỔỖƠỜỚỢỞỠÙÚỤỦŨƯỪỨỰỬỮỲÝỴỶỸĐD]{2,30}$/';
+// chu y: trong ho ten co dau cach len ta de dau cach o dau cho de phan biet
+if(!preg_match($bt_hodem, $hosv)){
+	$err[]='Họ đệm chỉ nhập chuỗi tiếng Việt có dấu hoặc không dấu, không được nhập ký tự đặc biệt và nhập từ 2-30 ký tự.';
+}
+
+$bt_ten = '/^[ A-Za-zàáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđÀÁẠẢÃÂẦẤẬẨẪĂẰẮẶẲẴÈÉẸẺẼÊỀẾỆỂỄÌÍỊỈĨÒÓỌỎÕÔỒỐỘỔỖƠỜỚỢỞỠÙÚỤỦŨƯỪỨỰỬỮỲÝỴỶỸĐD]{2,10}$/';
+if(!preg_match($bt_ten, $tensv)){
+	$err[]='Tên SV chỉ nhập chuỗi tiếng Việt có dấu hoặc không dấu, không được nhập ký tự đặc biệt và nhập từ 2-10 ký tự.';
+}
+
+if($phai != 0 && $phai != 1){
+	$err[] = 'Giới tính phải được chọn trên giao diện';
+}
+if(!preg_match('/^[A-Z]{2}$/', $makh)){
+	$err[] = 'Khoa phải được chọn trong danh sách!';
+}
+
+
+	//3. Nếu không lỗi thì ghi vào csdl
+
+	if(empty($err)){
+		// không có lỗi thì viết lệnh ghi vào csdl
+
+		echo "LỆNH GHI VAO CSDL";
+
+		// echo $masv;
+
+		$sql = "INSERT INTO sinhvien(MaSV, HoSV, TenSV, Phai, MaKH)
+				VALUES ('{$masv}','{$hosv}','{$tensv}',{$phai},'{$makh}') ";
+
+				// echo $sql;
+
+
+
+		$res = mysqli_query($conn, $sql);
+		if(mysqli_errno($conn)){
+			$err[] = "Lỗi ghi CSDL: ".mysqli_error($conn);
+		}else{
+			if($res){
+				$msg[]='Thêm sinh viên thành công!';
+				$masv = $hosv = $tesv = $phai = $makh = '';
+
+
+
+
+			}else{
+				$err[] = 'Không ghi được CSDL';
+			}
+			
+		}
+
+
+	} 
+
+}
+
+
+
+
+
+
+?>
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title></title>
+  <style type="text/css">
+  	.err{ color: red; background-color: yellow; padding: 10px; }
+  	.msg{ color: green; background-color: cyan;  padding: 10px;}
+  </style>
+</head>
+<body>
+<h1>Thêm sinh viên</h1>
+<?php 
+	if(!empty($err)){
+		echo '<p class="err">'.implode('<br>', $err).'</p>';
+	}
+	if(!empty($msg)){
+		echo '<p class="msg">'.implode('<br>', $msg).'</p>';
+	}
+?>
+
+<form method="post" action="">
+	<input type="text" name="masv" value="<?php echo @$masv ?>" placeholder="Mã SV"><br>
+	<input type="text" name="hosv" value="<?php echo @$hosv ?>" placeholder="Họ đệm"><br>
+	<input type="text" name="tensv" value="<?php echo @$tensv ?>" placeholder="Tên SV"><br>
+	Giới tính: <input type="radio" name="phai" value="0" 
+	<?php
+		if($phai==0 || ($phai != 0 && $phai != 1))
+			echo ' checked ';
+	 ?>	> Nam
+	<input type="radio" name="phai" value="1" 
+	<?php
+		if($phai==1)
+			echo ' checked ';
+	 ?>	> Nữ <br>
+	<select name="makh">
+		<option value="">Chọn Khoa</option>
+		<?php 
+			foreach($listKhoa as $row){ 
+				if(isset($makh) && $makh == $row['MaKH'])
+					$slx = " slected ";
+				else $slx = '';
+
+
+
+
+				echo "<option {$slx} value='{$row['MaKH']}'> {$row['TenKH']}</option>";
+			}
+		?>
+	</select>
+	<br>
+	<button type="submit">Lưu thông tin</button> 
+
+</form>
+
+ 
+</body>
+</html>
